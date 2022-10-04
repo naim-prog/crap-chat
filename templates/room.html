@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<head>
+    <title>Room {{ title }}</title>
+</head>
+
+<body>
+    <div>
+        {% if msg_list %}
+            {% for message in msg_list %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% else %}
+            <p>This room is empty...</p>
+        {% endif %}
+    </div>
+    <div>
+        <form action="/room/{{ room_key }}/" method="post">
+            <label>message</label>
+            <input type="text" id="message" name="message">
+            <input type="submit" value="Send">
+        </form>
+    </div>
+</body>
