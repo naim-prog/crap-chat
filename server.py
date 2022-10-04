@@ -1,7 +1,9 @@
-from flask import Flask, redirect, request, render_template, url_for
+from flask import Flask, redirect, request, render_template, url_for, send_file
 import secrets
 import os
 import time
+import qrcode
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(32)
@@ -15,7 +17,7 @@ def home():
 @app.route("/create/", methods=['GET'])
 def create():
     number = secrets.token_urlsafe(128)
-    new_file_room = open(f"room.{number}.txt", "w")
+    new_file_room = open(f"{os.getcwd()}/chats/room.{number}.txt", "w")
     new_file_room.write("")
     new_file_room.close()
     return redirect(f"/room/{number}")
@@ -31,8 +33,8 @@ def join():
 # Get the messages from the room
 @app.get("/room/<string:number>/")
 def room_get(number):
-    if os.path.isfile(f"{os.getcwd()}/room.{number}.txt"):
-        content_mes = open(f"room.{number}.txt", "r", encoding='utf-8').read()
+    if os.path.isfile(f"{os.getcwd()}/chats/room.{number}.txt"):
+        content_mes = open(f"{os.getcwd()}/chats/room.{number}.txt", "r", encoding='utf-8').read()
         title = f"{number[:6]}...{number[-6:]}"
         msg_list = content_mes.split('\n') if content_mes else None
         return render_template("room.html", title=title, msg_list=msg_list, room_key=number)
@@ -42,11 +44,23 @@ def room_get(number):
 # Post a message on the room
 @app.post("/room/<string:number>/")
 def room_post(number):
-    content_room = open(f"room.{number}.txt", "a", encoding='utf-8')
+    content_room = open(f"{os.getcwd()}/chats/room.{number}.txt", "a", encoding='utf-8')
     if request.form['message']:
         time_msg = f"[{time.localtime().tm_hour}:{time.localtime().tm_min}.{time.localtime().tm_sec}]"
         content_room.write(f"{time_msg} - {request.form['message']}\n")
     return redirect(url_for("room_get", number=number))
+
+@app.get("/room/<string:number>/qr/")
+def room_get_qr(number):
+    # If the qr code of the room exists return it
+    if os.path.isfile(f"{os.getcwd()}/qrs/{number}.png"):
+        return send_file(f"{os.getcwd()}/qrs/{number}.png")
+    # If qr doesnt exists create it and send it
+    else:
+        qr_img = qrcode.make(f"localhost/room/{number}/")
+        qr_img.save(f"{os.getcwd()}/qrs/{number}.png")
+        return send_file(f"{os.getcwd()}/qrs/{number}.png")
+
 
 if __name__ == "__main__":
     os.chdir(os.getcwd())
